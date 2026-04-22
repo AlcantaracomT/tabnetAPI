@@ -1,35 +1,37 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from typing import List, Optional
-from .database import conectarAoBanco
+from psycopg2.extras import RealDictCursor
+
+from .database import conexao, liberarConexao
 from .models import Categoria, TipoCategoria, ProdutoHospitalar
+from .auth import verificarChaveAPI
 
-
-app = FastAPI(title="TabAPI")
+app = FastAPI(dependencies=[Depends(verificarChaveAPI)], title="TabAPI")
 
 
 @app.get("/categoria", response_model=List[Categoria])  
 def listarCategoria():
-    banco = conectarAoBanco()
-    cursor = banco.cursor()
+    banco = conexao()
+    cursor = banco.cursor(cursor_factory=RealDictCursor)
 
     cursor.execute("SELECT idcategoria, nomecategoria FROM categoria ORDER BY idcategoria;")
     resultados = cursor.fetchall()
 
-    banco.close()
     cursor.close()
+    liberarConexao(banco)
 
     return resultados
 
 @app.get("/categoria/{categoria_id}", response_model=Categoria)
 def buscarCategoria(categoria_id: int):
-    banco = conectarAoBanco()
-    cursor = banco.cursor()
+    banco = conexao()
+    cursor = banco.cursor(cursor_factory=RealDictCursor)
 
     cursor.execute("SELECT idcategoria, nomecategoria FROM categoria WHERE idcategoria = %s", (categoria_id,))
     resultados = cursor.fetchall()
 
-    banco.close()
     cursor.close()
+    liberarConexao(banco)
 
     if not resultados:
         raise HTTPException(status_code=404, detail="Categoria não encontrada")
@@ -37,8 +39,8 @@ def buscarCategoria(categoria_id: int):
 
 @app.get("/tipoCategoria", response_model=List[TipoCategoria])
 def listarTipoCategoria():
-    banco= conectarAoBanco()
-    cursor= banco.cursor()
+    banco = conexao()
+    cursor = banco.cursor(cursor_factory=RealDictCursor)
 
     cursor.execute("" \
         "SELECT tc.idtipocategoria, tc.nometipocategoria, tc.codcategoria, c.nomecategoria as categoria_nome " \
@@ -50,20 +52,20 @@ def listarTipoCategoria():
     resultados = cursor.fetchall()
 
     cursor.close()
-    banco.close()
+    liberarConexao(banco)
 
     return resultados
 
 @app.get("/tipoCategoria/{tipo_id}", response_model=TipoCategoria)
 def buscarTipoCategoria(tipo_id: int):
-    banco = conectarAoBanco()
-    cursor = banco.cursor()
+    banco = conexao()
+    cursor = banco.cursor(cursor_factory=RealDictCursor)
 
-    cursor.execute("SELECT idtipocategoria, nometipocategoria, codcategoria FROM tipo_categoria WHERE idtipocategoria= %s", (tipo_id))
+    cursor.execute("SELECT idtipocategoria, nometipocategoria, codcategoria FROM tipo_categoria WHERE idtipocategoria= %s", (tipo_id,))
     resultados = cursor.fetchall()
 
     cursor.close()
-    banco.close()
+    liberarConexao(banco)
 
     if not resultados:
         raise HTTPException(status_code= 404, detail= "Tipo de categoria não encontrado")
@@ -71,15 +73,15 @@ def buscarTipoCategoria(tipo_id: int):
 
 @app.get("/producaoHospitalar", response_model=List[ProdutoHospitalar])
 def listarProducaoHospitalar(
-    limit: int = Query(100, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=419),
     offset: int= Query(0, ge=0),
     municipio: Optional[str] = None,
     ano: Optional[int] = None,
     min_internacoes: Optional[int] = None,
     max_internacoes: Optional[int] = None
 ):
-    banco = conectarAoBanco()
-    cursor = banco.cursor()
+    banco = conexao()
+    cursor = banco.cursor(cursor_factory=RealDictCursor)
 
     query= """
         SELECT id, municipio, aih_aprovadas, internacoes, valor_total,
@@ -115,13 +117,13 @@ def listarProducaoHospitalar(
     resultados = cursor.fetchall()
 
     cursor.close()
-    banco.close()
+    liberarConexao(banco)
 
     return resultados
 
 @app.get("/producaoHospitalar/{municipio}")
 def buscarMunicipio(municipio: str):
-    banco = conectarAoBanco()
+    banco = conexao()
     cursor= banco.cursor()
 
     cursor.execute("""
@@ -136,7 +138,7 @@ def buscarMunicipio(municipio: str):
     resultados = cursor.fetchall()
 
     cursor.close()
-    banco.close()
+    liberarConexao(banco)
 
     if not resultados:
         raise HTTPException(status_code=404, detail=f"Muncipio {municipio} não encontrado")
