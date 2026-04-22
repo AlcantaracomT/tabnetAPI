@@ -1,22 +1,16 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
 
 class Categoria(BaseModel):
     idcategoria: int
     nomecategoria: str
 
-class CriarCategoria(BaseModel):
-    nomecategoria: str
 
 class TipoCategoria(BaseModel):
     idtipocategoria: int
     nometipocategoria: str
     codcategoria: int
 
-class CriarTipoCategoria(BaseModel):
-    nometipocategoria: str
-    codcategoria: int
 
 class ProdutoHospitalar(BaseModel):
     id: Optional[int] = None  
@@ -32,11 +26,3 @@ class ProdutoHospitalar(BaseModel):
     taxa_mortalidade: Optional[float] = None
     ano: Optional[int] = None
     idtipocategoria: Optional[int] = None
-
-class FiltrosProducaoHospitalar(BaseModel):
-    municipio: Optional[str] = None
-    ano: Optional[int] = None
-    min_internacoes: Optional[int] = None
-    max_internacoes: Optional[int] = None
-    min_obitos: Optional[int] = None
-    max_obitos: Optional[int] = None
